@@ -1,42 +1,39 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const apiKey = process.env.GEMINI_API_KEY || "";
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function POST(req: Request) {
+  if (!apiKey) {
+    return NextResponse.json({ error: "API Key missing from environment setup." }, { status: 500 });
+  }
+
   try {
     const { currentPose, adjustmentRequest } = await req.json();
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash"
+    const prompt = 'You are an expert yoga instructor. Provide a single modification for: "' + currentPose + '" based on: "' + adjustmentRequest + '". Return a raw JSON object matching this exact shape: { "name": "Pose Name", "utility": "Benefit summary.", "metrics": "Hold 30s" }';
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
-
-    const prompt = `
-      You are an expert biomechanics and yoga instructor. 
-      The user is performing the following pose: "${currentPose}".
-      They have the following specific request/limitation: "${adjustmentRequest}".
-      
-      Generate a customized, alternative yoga posture choice that honors their condition.
-      Return EXACTLY a JSON object matching this structure:
-      {
-        "name": "Name of alternative pose",
-        "utility": "Clear explanation of how it accommodates their request.",
-        "metrics": "3 sets x 30 second holds"
-      }
-    `;
-
-    const result = await model.generateContent(prompt);
+    
     let responseText = result.response.text().trim();
 
-    // 🔥 Strip any markdown code blocks
-    if (responseText.startsWith("```")) {
-      responseText = responseText.replace(/^
-```json\s*/i, "").replace(/```$/, "").trim();
+    if (responseText.includes("json")) {
+      const splitLines = responseText.split("\n");
+      if (splitLines[0].includes("json") || splitLines[0].includes("`")) {
+        splitLines.shift();
+      }
+      if (splitLines.length > 0 && splitLines[splitLines.length - 1].includes("`")) {
+        splitLines.pop();
+      }
+      responseText = splitLines.join("\n").trim();
     }
 
     return NextResponse.json(JSON.parse(responseText));
   } catch (error: any) {
-    console.error("Yoga API Parsing Error:", error);
-    return NextResponse.json({ error: "Failed to read yoga structure signature." }, { status: 500 });
+    return NextResponse.json({ error: "Failed to process yoga model request." }, { status: 500 });
   }
 }

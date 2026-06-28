@@ -9,7 +9,7 @@ To update your code folder right now, copy the code box below, open your project
 
 A premium, hyper-aesthetic full-stack fitness application combining real-time generative artificial intelligence with minimalist dark-mode engineering. Designed as an integrated, fluid health companion, AuraFit AI merges deep kinesiology model engines with frictionless localized telemetry, static high-yield physical flows, and decentralized social sync webs.
 
-Live demo: <em>https://aura-fit-app-octq.vercel.app/</em>  
+Live demo:https://aura-fit-app-octq.vercel.app/
 
 ---    
 
